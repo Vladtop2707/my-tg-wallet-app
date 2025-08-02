@@ -7,7 +7,6 @@
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     
     <style>
         :root {
@@ -22,78 +21,43 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             padding: 15px; margin: 0; background-color: var(--tg-bg); color: var(--tg-text);
         }
+        .wallet-header { text-align: center; margin-bottom: 25px; }
+        .balance-total { font-size: 36px; font-weight: 600; }
+        .balance-hint { color: var(--tg-hint); font-size: 14px; }
         .actions-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 30px; text-align: center; }
         .action-button { display: flex; flex-direction: column; align-items: center; font-size: 14px; cursor: pointer; }
         .action-icon { width: 48px; height: 48px; background-color: var(--tg-secondary-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 5px; }
-        
-        /* Стилі для основного екрана */
-        #main-view .wallet-header { text-align: center; margin-bottom: 25px; }
-        #main-view .balance-total { font-size: 36px; font-weight: 600; }
-        #main-view .balance-hint { color: var(--tg-hint); font-size: 14px; }
-        #main-view .asset-list-title { font-weight: 600; margin-bottom: 10px; }
-        #main-view .asset-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--tg-secondary-bg); cursor: pointer; }
-        #main-view .asset-item:last-child { border-bottom: none; }
-        #main-view .asset-icon { width: 40px; height: 40px; margin-right: 12px; }
-        #main-view .asset-info { flex-grow: 1; }
-        #main-view .asset-name { font-weight: 500; }
-        #main-view .asset-balance-crypto { color: var(--tg-hint); font-size: 14px; }
-        #main-view .asset-value { text-align: right; }
-        #main-view .asset-balance-usd { font-weight: 500; }
-        #main-view .asset-price-change { font-size: 14px; }
-
-        /* Стилі для екрана деталей */
-        #detail-view .detail-header { display: flex; align-items: center; margin-bottom: 20px; }
-        #detail-view .back-button { font-size: 24px; cursor: pointer; margin-right: 15px; padding: 5px; }
-        #detail-view .asset-title-icon { width: 32px; height: 32px; margin-right: 10px; }
-        #detail-view .asset-title-name { font-size: 20px; font-weight: 600; }
-        #detail-view .balance-total { font-size: 32px; font-weight: 500; text-align: center; }
-        #detail-view .balance-crypto { color: var(--tg-hint); font-size: 16px; text-align: center; margin-bottom: 20px; }
-        #chart-container { width: 100%; height: 250px; margin-bottom: 20px; }
-
+        .asset-list-title { font-weight: 600; margin-bottom: 10px; }
+        .asset-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--tg-secondary-bg); }
+        .asset-item:last-child { border-bottom: none; }
+        .asset-icon { width: 40px; height: 40px; margin-right: 12px; }
+        .asset-info { flex-grow: 1; }
+        .asset-name { font-weight: 500; }
+        .asset-balance-crypto { color: var(--tg-hint); font-size: 14px; }
+        .asset-value { text-align: right; }
+        .asset-balance-usd { font-weight: 500; }
+        .asset-price-change { font-size: 14px; }
         .positive { color: var(--green); }
         .negative { color: var(--red); }
     </style>
 </head>
 <body>
-    <div id="main-view">
-        <div class="wallet-header">
-            <div id="total-balance-usd" class="balance-total">$0.00</div>
-            <div class="balance-hint">Загальний баланс в USD</div>
-        </div>
-        <div class="actions-bar">
-            <div class="action-button" onclick="showAlert('Поповнити')"><div class="action-icon">➕</div><span>Поповнити</span></div>
-            <div class="action-button" onclick="showAlert('Вивести')"><div class="action-icon">⬆️</div><span>Вивести</span></div>
-            <div class="action-button" onclick="showAlert('Обміняти')"><div class="action-icon">🔄</div><span>Обміняти</span></div>
-            <div class="action-button" onclick="showAlert('Біржа')"><div class="action-icon">📈</div><span>Біржа</span></div>
-        </div>
-        <div class="asset-list-title">Активи</div>
-        <div id="asset-list"></div>
+    <div class="wallet-header">
+        <div id="total-balance-usd" class="balance-total">$0.00</div>
+        <div class="balance-hint">Загальний баланс в USD</div>
     </div>
-
-    <div id="detail-view" style="display: none;">
-        <div class="detail-header">
-            <div class="back-button" onclick="showMainView()">←</div>
-            <img id="detail-asset-icon" src="" class="asset-title-icon">
-            <div id="detail-asset-name" class="asset-title-name"></div>
-        </div>
-        <div id="detail-balance-usd" class="balance-total"></div>
-        <div id="detail-balance-crypto" class="balance-crypto"></div>
-        <div id="chart-container"></div>
-        <div class="actions-bar">
-             <div class="action-button" onclick="showAlert('Поповнити')"><div class="action-icon">➕</div><span>Поповнити</span></div>
-            <div class="action-button" onclick="showAlert('Вивести')"><div class="action-icon">⬆️</div><span>Вивести</span></div>
-            <div class="action-button" onclick="showAlert('Обміняти')"><div class="action-icon">🔄</div><span>Обміняти</span></div>
-            <div class="action-button" onclick="showAlert('Біржа')"><div class="action-icon">📈</div><span>Біржа</span></div>
-        </div>
+    <div class="actions-bar">
+        <div class="action-button" onclick="showAlert('Поповнити')"><div class="action-icon">➕</div><span>Поповнити</span></div>
+        <div class="action-button" onclick="showAlert('Вивести')"><div class="action-icon">⬆️</div><span>Вивести</span></div>
+        <div class="action-button" onclick="showAlert('Обміняти')"><div class="action-icon">🔄</div><span>Обміняти</span></div>
+        <div class="action-button" onclick="showAlert('Біржа')"><div class="action-icon">📈</div><span>Біржа</span></div>
     </div>
+    <div class="asset-list-title">Активи</div>
+    <div id="asset-list"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
-
-        const mainView = document.getElementById('main-view');
-        const detailView = document.getElementById('detail-view');
-        let chart = null;
 
         function showAlert(action) {
             tg.showAlert(`Функція "${action}" знаходиться в розробці.`);
@@ -105,54 +69,27 @@
             { id: 'the-open-network', symbol: 'TON', name: 'Toncoin', balance: 25.0, iconUrl: 'https://s2.coinmarketcap.com/static/img/coins/64x64/11419.png' }
         ];
 
-        function showMainView() {
-            mainView.style.display = 'block';
-            detailView.style.display = 'none';
-        }
-
-        async function showDetailView(asset, priceData) {
-            mainView.style.display = 'none';
-            detailView.style.display = 'block';
-
-            document.getElementById('detail-asset-icon').src = asset.iconUrl;
-            document.getElementById('detail-asset-name').textContent = asset.name;
-            const usdValue = asset.balance * priceData.usd;
-            document.getElementById('detail-balance-usd').textContent = `$${usdValue.toFixed(2)}`;
-            document.getElementById('detail-balance-crypto').textContent = `${asset.balance.toFixed(4)} ${asset.symbol}`;
+        async function fetchAssetPrices() {
+            const assetIds = myAssets.map(asset => asset.id).join(',');
+            const apiUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${assetIds}&vs_currencies=usd&include_24hr_change=true`;
             
-            await createChart(asset.id);
-        }
-
-        async function createChart(assetId) {
-            const chartContainer = document.getElementById('chart-container');
-            chartContainer.innerHTML = ''; 
-
-            const historyUrl = `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart?vs_currency=usd&days=30`;
-            const response = await fetch(historyUrl);
-            const data = await response.json();
-            const chartData = data.prices.map(p => ({ time: p[0] / 1000, value: p[1] }));
-
-            chart = LightweightCharts.createChart(chartContainer, {
-                width: chartContainer.clientWidth,
-                height: chartContainer.clientHeight,
-                layout: { backgroundColor: 'transparent', textColor: 'var(--tg-text)' },
-                grid: { vertLines: { color: 'var(--tg-secondary-bg)' }, horzLines: { color: 'var(--tg-secondary-bg)' } },
-                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                rightPriceScale: { borderColor: 'var(--tg-hint)' },
-                timeScale: { borderColor: 'var(--tg-hint)' }
-            });
-
-            const lineSeries = chart.addLineSeries({ color: '#5a88c8', lineWidth: 2 });
-            lineSeries.setData(chartData);
-            chart.timeScale().fitContent();
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
+            } catch (error) {
+                console.error("Failed to fetch prices:", error);
+                tg.showAlert("Не вдалося завантажити курси валют.");
+                return null;
+            }
         }
 
         async function displayAssets() {
-            const pricesUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${myAssets.map(a=>a.id).join(',')}&vs_currencies=usd&include_24hr_change=true`;
-            const response = await fetch(pricesUrl);
-            const prices = await response.json();
-            
+            const prices = await fetchAssetPrices();
+            if (!prices) return;
+
             const assetListElement = document.getElementById('asset-list');
+            const totalBalanceElement = document.getElementById('total-balance-usd');
             let totalUsdValue = 0;
             let html = '';
 
@@ -167,8 +104,9 @@
                 const changeClass = priceChange >= 0 ? 'positive' : 'negative';
                 const changeSign = priceChange >= 0 ? '+' : '';
 
+                // Тепер елементи списку не клікабельні
                 html += `
-                    <div class="asset-item" onclick='showDetailView(${JSON.stringify(asset)}, ${JSON.stringify(priceData)})'>
+                    <div class="asset-item">
                         <img src="${asset.iconUrl}" class="asset-icon" alt="${asset.name}">
                         <div class="asset-info">
                             <div class="asset-name">${asset.name}</div>
@@ -184,7 +122,7 @@
                 `;
             }
             assetListElement.innerHTML = html;
-            document.getElementById('total-balance-usd').textContent = `$${totalUsdValue.toFixed(2)}`;
+            totalBalanceElement.textContent = `$${totalUsdValue.toFixed(2)}`;
         }
 
         window.addEventListener('load', displayAssets);
