@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Web3 Гаманець</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
+    
+    <style>
+        /* Стилі, що використовують змінні кольорів Telegram */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        /* Стиль для кнопки */
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            background-color: var(--tg-theme-button-color, #5a88c8);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* Контейнер для інформації про гаманець */
+        .wallet-info {
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 25px;
+            text-align: left;
+            word-wrap: break-word; /* Для переносу довгих адрес */
+        }
+        
+        .wallet-info p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .wallet-info code {
+            font-family: monospace;
+            background-color: rgba(0,0,0,0.05);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🚀 Мій Web3 Гаманець</h1>
+        
+        <button id="connectButton">Підключити Гаманець</button>
+
+        <div id="walletInfo" class="wallet-info" style="display: none;">
+            <p><b>Статус:</b> <span id="status">Не підключено</span></p>
+            <p><b>Адреса:</b> <code id="address">--</code></p>
+            <p><b>Баланс:</b> <span id="balance">--</span> ETH</p>
+        </div>
+    </div>
+
+    <script>
+        // 3. Ініціалізація додатку Telegram
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // Розширюємо вікно додатку на весь екран
+
+        // Отримання доступу до HTML елементів
+        const connectButton = document.getElementById('connectButton');
+        const walletInfoDiv = document.getElementById('walletInfo');
+        const statusSpan = document.getElementById('status');
+        const addressSpan = document.getElementById('address');
+        const balanceSpan = document.getElementById('balance');
+
+        // Додаємо слухача подій для кнопки
+        connectButton.addEventListener('click', async () => {
+            // Перевіряємо, чи є в браузері гаманець (наприклад, MetaMask)
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    // Показуємо користувачу, що йде процес
+                    connectButton.textContent = 'Підключення...';
+                    connectButton.disabled = true;
+
+                    // Запитуємо доступ до гаманця користувача
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const userAddress = accounts[0];
+                    
+                    // Створюємо провайдер за допомогою ethers.js
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    const balanceWei = await provider.getBalance(userAddress);
+                    
+                    // Конвертуємо баланс з Wei в ETH
+                    const balanceEth = ethers.utils.formatEther(balanceWei);
+
+                    // 4. Оновлюємо інтерфейс з отриманими даними
+                    statusSpan.textContent = "✅ Підключено";
+                    addressSpan.textContent = userAddress;
+                    balanceSpan.textContent = parseFloat(balanceEth).toFixed(5); // Округлюємо
+                    
+                    walletInfoDiv.style.display = 'block';
+                    connectButton.style.display = 'none';
+
+                } catch (error) {
+                    console.error("Помилка підключення до гаманця:", error);
+                    // Показуємо нативне сповіщення Telegram про помилку
+                    tg.showAlert(`Помилка: ${error.message || 'Не вдалося підключити гаманець.'}`);
+                    connectButton.textContent = 'Підключити Гаманець';
+                    connectButton.disabled = false;
+                }
+            } else {
+                // Якщо гаманець не знайдено
+                tg.showAlert("Будь ласка, встановіть Web3-гаманець (наприклад, MetaMask) або відкрийте Telegram у браузері з підтримкою гаманця.");
+            }
+        });
+    </script>
+</body>
+</html>
