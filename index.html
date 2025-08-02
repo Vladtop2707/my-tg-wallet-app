@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Crypto Wallet</title>
-    
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-    
     <style>
         :root {
             --tg-bg: var(--tg-theme-bg-color, #18222d);
@@ -25,7 +23,7 @@
         .actions-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 30px; text-align: center; }
         .action-button { display: flex; flex-direction: column; align-items: center; font-size: 14px; cursor: pointer; }
         .action-icon { width: 48px; height: 48px; background-color: var(--tg-secondary-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 5px; }
-        
+
         /* Стилі для основного екрана */
         #main-view .wallet-header { text-align: center; margin-bottom: 25px; }
         #main-view .balance-total { font-size: 36px; font-weight: 600; }
@@ -48,7 +46,7 @@
         #detail-view .asset-title-name { font-size: 20px; font-weight: 600; }
         #detail-view .balance-total { font-size: 32px; font-weight: 500; text-align: center; }
         #detail-view .balance-crypto { color: var(--tg-hint); font-size: 16px; text-align: center; margin-bottom: 20px; }
-        #chart-container { width: 100%; height: 250px; margin-bottom: 20px; }
+        /* Стиль для контейнера графіка видалено */
 
         .positive { color: var(--green); }
         .negative { color: var(--red); }
@@ -78,7 +76,6 @@
         </div>
         <div id="detail-balance-usd" class="balance-total"></div>
         <div id="detail-balance-crypto" class="balance-crypto"></div>
-        <div id="chart-container"></div>
         <div class="actions-bar">
              <div class="action-button" onclick="showAlert('Поповнити')"><div class="action-icon">➕</div><span>Поповнити</span></div>
             <div class="action-button" onclick="showAlert('Вивести')"><div class="action-icon">⬆️</div><span>Вивести</span></div>
@@ -93,7 +90,7 @@
 
         const mainView = document.getElementById('main-view');
         const detailView = document.getElementById('detail-view');
-        let chart = null;
+        // Змінну 'chart' видалено
 
         function showAlert(action) {
             tg.showAlert(`Функція "${action}" знаходиться в розробці.`);
@@ -110,7 +107,7 @@
             detailView.style.display = 'none';
         }
 
-        async function showDetailView(asset, priceData) {
+        function showDetailView(asset, priceData) {
             mainView.style.display = 'none';
             detailView.style.display = 'block';
 
@@ -120,32 +117,10 @@
             document.getElementById('detail-balance-usd').textContent = `$${usdValue.toFixed(2)}`;
             document.getElementById('detail-balance-crypto').textContent = `${asset.balance.toFixed(4)} ${asset.symbol}`;
             
-            await createChart(asset.id);
+            // Виклик функції createChart видалено
         }
 
-        async function createChart(assetId) {
-            const chartContainer = document.getElementById('chart-container');
-            chartContainer.innerHTML = ''; 
-
-            const historyUrl = `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart?vs_currency=usd&days=30`;
-            const response = await fetch(historyUrl);
-            const data = await response.json();
-            const chartData = data.prices.map(p => ({ time: p[0] / 1000, value: p[1] }));
-
-            chart = LightweightCharts.createChart(chartContainer, {
-                width: chartContainer.clientWidth,
-                height: chartContainer.clientHeight,
-                layout: { backgroundColor: 'transparent', textColor: 'var(--tg-text)' },
-                grid: { vertLines: { color: 'var(--tg-secondary-bg)' }, horzLines: { color: 'var(--tg-secondary-bg)' } },
-                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                rightPriceScale: { borderColor: 'var(--tg-hint)' },
-                timeScale: { borderColor: 'var(--tg-hint)' }
-            });
-
-            const lineSeries = chart.addLineSeries({ color: '#5a88c8', lineWidth: 2 });
-            lineSeries.setData(chartData);
-            chart.timeScale().fitContent();
-        }
+        // Функцію createChart повністю видалено
 
         async function displayAssets() {
             const pricesUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${myAssets.map(a=>a.id).join(',')}&vs_currencies=usd&include_24hr_change=true`;
