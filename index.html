@@ -11,7 +11,6 @@
     
     <style>
         :root {
-            /* Визначаємо кольори, щоб легко їх змінювати */
             --tg-bg: var(--tg-theme-bg-color, #ffffff);
             --tg-text: var(--tg-theme-text-color, #000000);
             --tg-hint: var(--tg-theme-hint-color, #999999);
@@ -144,11 +143,29 @@
 
         // --- ДАНІ ТА ЛОГІКА ---
 
-        // 1. Наші активи (це можна буде отримувати з гаманця)
+        // 1. ОНОВЛЕНО: Додано прямі посилання 'iconUrl' для кожного активу
         const myAssets = [
-            { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', balance: 0.05 },
-            { id: 'tether', symbol: 'USDT', name: 'Tether', balance: 100.50 },
-            { id: 'the-open-network', symbol: 'TON', name: 'Toncoin', balance: 25.0 }
+            { 
+                id: 'ethereum', 
+                symbol: 'ETH', 
+                name: 'Ethereum', 
+                balance: 0.05,
+                iconUrl: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png' 
+            },
+            { 
+                id: 'tether', 
+                symbol: 'USDT', 
+                name: 'Tether', 
+                balance: 100.50,
+                iconUrl: 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png'
+            },
+            { 
+                id: 'the-open-network', 
+                symbol: 'TON', 
+                name: 'Toncoin', 
+                balance: 25.0,
+                iconUrl: 'https://s2.coinmarketcap.com/static/img/coins/64x64/11419.png'
+            }
         ];
 
         // 2. Функція для отримання даних з API CoinGecko
@@ -158,11 +175,8 @@
             
             try {
                 const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                return data;
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
             } catch (error) {
                 console.error("Failed to fetch prices:", error);
                 tg.showAlert("Не вдалося завантажити курси валют.");
@@ -192,9 +206,10 @@
                 const changeClass = priceChange >= 0 ? 'positive' : 'negative';
                 const changeSign = priceChange >= 0 ? '+' : '';
 
+                // ОНОВЛЕНО: Тег <img> тепер використовує пряме посилання з asset.iconUrl
                 html += `
                     <div class="asset-item">
-                        <img src="https://assets.coingecko.com/coins/images/${assetIdsToImageMap[asset.id]}/large.png" class="asset-icon" alt="${asset.name}">
+                        <img src="${asset.iconUrl}" class="asset-icon" alt="${asset.name}">
                         <div class="asset-info">
                             <div class="asset-name">${asset.name}</div>
                             <div class="asset-balance-crypto">${asset.balance.toFixed(4)} ${asset.symbol.toUpperCase()}</div>
@@ -213,17 +228,10 @@
             totalBalanceElement.textContent = `$${totalUsdValue.toFixed(2)}`;
         }
 
-        // Допоміжна мапа для отримання правильних іконок
-        const assetIdsToImageMap = {
-            'ethereum': '279',
-            'tether': '325',
-            'the-open-network': '11419'
-        };
-
+        // ВИДАЛЕНО: Стара мапа assetIdsToImageMap більше не потрібна
 
         // Запускаємо відображення при завантаженні
         window.addEventListener('load', displayAssets);
-
     </script>
 </body>
 </html>
