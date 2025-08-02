@@ -6,7 +6,6 @@
     <title>Crypto Wallet</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" type="application/javascript"></script>
     
     <style>
         :root {
@@ -21,16 +20,13 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             padding: 15px; margin: 0; background-color: var(--tg-bg); color: var(--tg-text);
         }
-        .wallet-header { text-align: center; margin-bottom: 25px; }
-        .balance-total { font-size: 36px; font-weight: 600; }
-        .balance-hint { color: var(--tg-hint); font-size: 14px; }
         .actions-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 30px; text-align: center; }
         .action-button { display: flex; flex-direction: column; align-items: center; font-size: 14px; cursor: pointer; }
         .action-icon { width: 48px; height: 48px; background-color: var(--tg-secondary-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 5px; }
         
-        /* Стилі активів */
-        .asset-list-title { font-weight: 600; margin-bottom: 10px; }
-        .asset-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--tg-secondary-bg); }
+        /* Загальні стилі */
+        .list-title { font-weight: 600; margin-top: 30px; margin-bottom: 10px; }
+        .asset-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--tg-secondary-bg); cursor: pointer; }
         .asset-item:last-child { border-bottom: none; }
         .asset-icon { width: 40px; height: 40px; margin-right: 12px; }
         .asset-info { flex-grow: 1; }
@@ -41,9 +37,6 @@
         .asset-price-change { font-size: 14px; }
         .positive { color: var(--green); }
         .negative { color: var(--red); }
-        
-        /* НОВІ СТИЛІ для історії транзакцій */
-        .history-title { font-weight: 600; margin-top: 30px; margin-bottom: 10px; }
         .history-item { display: flex; align-items: center; padding: 12px 0; }
         .history-icon { width: 40px; height: 40px; margin-right: 12px; background-color: var(--tg-secondary-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .history-details { flex-grow: 1; }
@@ -53,90 +46,153 @@
         .history-amount-crypto { font-weight: 500; }
         .history-amount-usd { color: var(--tg-hint); font-size: 14px; }
         .received { color: var(--green); }
-        .sent { color: var(--tg-text); } /* Колір для відправлених */
+        .sent { color: var(--tg-text); }
+        
+        /* Стилі для екрана деталей */
+        .detail-header { display: flex; align-items: center; margin-bottom: 20px; }
+        .back-button { font-size: 24px; cursor: pointer; margin-right: 15px; padding: 5px; }
+        .detail-title-icon { width: 32px; height: 32px; margin-right: 10px; }
+        .detail-title-name { font-size: 20px; font-weight: 600; }
     </style>
 </head>
 <body>
-    <div class="wallet-header">
-        <div id="total-balance-usd" class="balance-total">$0.00</div>
-        <div class="balance-hint">Загальний баланс в USD</div>
+    <div id="main-view">
+        <div class="wallet-header" style="text-align: center; margin-bottom: 25px;">
+            <div id="total-balance-usd" style="font-size: 36px; font-weight: 600;">$0.00</div>
+            <div style="color: var(--tg-hint); font-size: 14px;">Загальний баланс в USD</div>
+        </div>
+        <div class="actions-bar">
+            </div>
+        <div class="list-title">Активи</div>
+        <div id="asset-list"></div>
+        <div class="list-title">Загальна історія</div>
+        <div id="transaction-history-list"></div>
     </div>
-    <div class="actions-bar">
-        <div class="action-button" onclick="showAlert('Поповнити')"><div class="action-icon">➕</div><span>Поповнити</span></div>
-        <div class="action-button" onclick="showAlert('Вивести')"><div class="action-icon">⬆️</div><span>Вивести</span></div>
-        <div class="action-button" onclick="showAlert('Обміняти')"><div class="action-icon">🔄</div><span>Обміняти</span></div>
-        <div class="action-button" onclick="showAlert('Біржа')"><div class="action-icon">📈</div><span>Біржа</span></div>
-    </div>
-    <div class="asset-list-title">Активи</div>
-    <div id="asset-list"></div>
 
-    <div class="history-title">Історія</div>
-    <div id="transaction-history-list"></div>
+    <div id="detail-view" style="display: none;">
+        <div class="detail-header">
+            <div class="back-button" onclick="showMainView()">←</div>
+            <img id="detail-asset-icon" src="" class="detail-title-icon">
+            <div id="detail-asset-name" class="detail-title-name"></div>
+        </div>
+        <div class="list-title">Історія транзакцій</div>
+        <div id="filtered-history-list"></div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
 
-        function showAlert(action) {
-            tg.showAlert(`Функція "${action}" знаходиться в розробці.`);
-        }
+        const mainView = document.getElementById('main-view');
+        const detailView = document.getElementById('detail-view');
 
         const myAssets = [
-            { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', balance: 0.05, iconUrl: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png' },
-            { id: 'tether', symbol: 'USDT', name: 'Tether', balance: 100.50, iconUrl: 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png' },
-            { id: 'the-open-network', symbol: 'TON', name: 'Toncoin', balance: 25.0, iconUrl: 'https://s2.coinmarketcap.com/static/img/coins/64x64/11419.png' }
+             { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', balance: 0.05, iconUrl: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png' },
+             { id: 'tether', symbol: 'USDT', name: 'Tether', balance: 100.50, iconUrl: 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png' },
+             { id: 'the-open-network', symbol: 'TON', name: 'Toncoin', balance: 25.0, iconUrl: 'https://s2.coinmarketcap.com/static/img/coins/64x64/11419.png' }
         ];
 
-        // НОВИЙ МАСИВ з прикладами транзакцій
         const mockTransactions = [
             { type: 'received', assetSymbol: 'TON', amountCrypto: 28.57, amountUsd: 100, date: '01 серпня 2025' },
             { type: 'sent', assetSymbol: 'ETH', amountCrypto: 0.02, amountUsd: 68.4, date: '30 липня 2025' },
             { type: 'received', assetSymbol: 'USDT', amountCrypto: 50.0, amountUsd: 50.0, date: '28 липня 2025' },
             { type: 'sent', assetSymbol: 'TON', amountCrypto: 5.0, amountUsd: 17.5, date: '25 липня 2025' },
         ];
-
-        async function fetchAssetPrices() {
-            // ... (цей код без змін)
+        
+        // --- Навігація ---
+        function showMainView() {
+            mainView.style.display = 'block';
+            detailView.style.display = 'none';
         }
 
-        async function displayAssets() {
-            // ... (цей код без змін)
+        function showDetailView(assetSymbol) {
+            const asset = myAssets.find(a => a.symbol === assetSymbol);
+            if (!asset) return;
+            
+            mainView.style.display = 'none';
+            detailView.style.display = 'block';
+
+            document.getElementById('detail-asset-icon').src = asset.iconUrl;
+            document.getElementById('detail-asset-name').textContent = asset.name;
+            
+            // Відображаємо відфільтровану історію
+            displayTransactionHistory(assetSymbol);
         }
 
-        // НОВА ФУНКЦІЯ для відображення історії
-        function displayTransactionHistory() {
-            const historyListElement = document.getElementById('transaction-history-list');
+        // --- Логіка відображення ---
+        async function displayAssets(prices) {
+            const assetListElement = document.getElementById('asset-list');
+            let totalUsdValue = 0;
             let html = '';
 
-            for (const tx of mockTransactions) {
-                const isReceived = tx.type === 'received';
-                const sign = isReceived ? '+' : '-';
-                const amountClass = isReceived ? 'received' : 'sent';
-                const icon = isReceived ? '➕' : '⬆️';
-                
-                const asset = myAssets.find(a => a.symbol === tx.assetSymbol);
+            for (const asset of myAssets) {
+                const priceData = prices[asset.id];
+                if (!priceData) continue;
+                totalUsdValue += asset.balance * priceData.usd;
 
-                html += `
-                    <div class="history-item">
-                        <div class="history-icon">${icon}</div>
-                        <div class="history-details">
-                            <div class="history-type">${isReceived ? 'Отримано' : 'Надіслано'} ${asset.name}</div>
-                            <div class="history-date">${tx.date}</div>
-                        </div>
-                        <div class="history-amount">
-                            <div class="history-amount-crypto ${amountClass}">${sign}${tx.amountCrypto.toFixed(4)} ${tx.assetSymbol}</div>
-                            <div class="history-amount-usd">$${tx.amountUsd.toFixed(2)}</div>
-                        </div>
-                    </div>
-                `;
+                // Додаємо onclick для переходу
+                html += `<div class="asset-item" onclick="showDetailView('${asset.symbol}')">
+                           <img src="${asset.iconUrl}" class="asset-icon">
+                           <div class="asset-info">
+                             <div class="asset-name">${asset.name}</div>
+                             <div class="asset-balance-crypto">${asset.balance.toFixed(4)} ${asset.symbol}</div>
+                           </div>
+                           <div class="asset-value">
+                             <div class="asset-balance-usd">$${(asset.balance * priceData.usd).toFixed(2)}</div>
+                           </div>
+                         </div>`;
+            }
+            assetListElement.innerHTML = html;
+            document.getElementById('total-balance-usd').textContent = `$${totalUsdValue.toFixed(2)}`;
+        }
+
+        function displayTransactionHistory(filterSymbol = null) {
+            // Вибираємо, куди вставляти історію: в загальний список чи в детальний
+            const targetElementId = filterSymbol ? 'filtered-history-list' : 'transaction-history-list';
+            const historyListElement = document.getElementById(targetElementId);
+            
+            // Фільтруємо транзакції, якщо потрібно
+            const transactionsToDisplay = filterSymbol 
+                ? mockTransactions.filter(tx => tx.assetSymbol === filterSymbol) 
+                : mockTransactions;
+            
+            let html = '';
+            for (const tx of transactionsToDisplay) {
+                 const isReceived = tx.type === 'received';
+                 const sign = isReceived ? '+' : '-';
+                 const amountClass = isReceived ? 'received' : 'sent';
+                 const icon = isReceived ? '➕' : '⬆️';
+                 const asset = myAssets.find(a => a.symbol === tx.assetSymbol);
+
+                 html += `<div class="history-item">
+                            <div class="history-icon">${icon}</div>
+                            <div class="history-details">
+                              <div class="history-type">${isReceived ? 'Отримано' : 'Надіслано'} ${asset.name}</div>
+                              <div class="history-date">${tx.date}</div>
+                            </div>
+                            <div class="history-amount">
+                              <div class="history-amount-crypto ${amountClass}">${sign}${tx.amountCrypto.toFixed(4)} ${tx.assetSymbol}</div>
+                              <div class="history-amount-usd">$${tx.amountUsd.toFixed(2)}</div>
+                            </div>
+                          </div>`;
             }
             historyListElement.innerHTML = html;
         }
 
-        // ОНОВЛЕНО: викликаємо обидві функції при завантаженні
-        window.addEventListener('load', () => {
-            displayAssets();
-            displayTransactionHistory();
+        // --- Запуск ---
+        window.addEventListener('load', async () => {
+            try {
+                const pricesUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${myAssets.map(a=>a.id).join(',')}&vs_currencies=usd`;
+                const response = await fetch(pricesUrl);
+                if (!response.ok) throw new Error('Failed to load prices');
+                const prices = await response.json();
+                
+                await displayAssets(prices);
+                displayTransactionHistory(); // Показуємо загальну історію
+            } catch (error) {
+                console.error(error);
+                document.getElementById('asset-list').innerHTML = '<p style="color: var(--tg-hint);">Не вдалося завантажити дані активів. Спробуйте пізніше.</p>';
+            }
         });
     </script>
 </body>
