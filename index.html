@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Crypto Wallet</title>
-    
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
+
     <style>
         :root {
             --tg-bg: var(--tg-theme-bg-color, #18222d);
@@ -23,7 +23,7 @@
         .actions-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 30px; text-align: center; }
         .action-button { display: flex; flex-direction: column; align-items: center; font-size: 14px; cursor: pointer; }
         .action-icon { width: 48px; height: 48px; background-color: var(--tg-secondary-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 5px; }
-        
+
         .list-title { font-weight: 600; margin-top: 30px; margin-bottom: 10px; }
         .asset-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--tg-secondary-bg); cursor: pointer; }
         .asset-item:last-child { border-bottom: none; }
@@ -46,7 +46,7 @@
         .history-amount-usd { color: var(--tg-hint); font-size: 14px; }
         .received { color: var(--green); }
         .sent { color: var(--tg-text); }
-        
+
         .detail-header { display: flex; align-items: center; margin-bottom: 20px; }
         .back-button { font-size: 24px; cursor: pointer; margin-right: 15px; padding: 5px; }
         .detail-title-icon { width: 32px; height: 32px; margin-right: 10px; }
@@ -63,7 +63,7 @@
             <div class="action-button" onclick="showAlert('Поповнити')"><div class="action-icon">➕</div><span>Поповнити</span></div>
             <div class="action-button" onclick="showAlert('Вивести')"><div class="action-icon">⬆️</div><span>Вивести</span></div>
             <div class="action-button" onclick="showAlert('Обміняти')"><div class="action-icon">🔄</div><span>Обміняти</span></div>
-            <div class="action-button" onclick="showAlert('Біржа')"><div class="action-icon">📈</div><span>Біржа</span></div>
+            <div class="action-button" onclick="openBinanceExchange()"><div class="action-icon">📈</div><span>Біржа</span></div>
         </div>
         <div class="list-title">Активи</div>
         <div id="asset-list"></div>
@@ -104,9 +104,14 @@
             { type: 'received', assetSymbol: 'TON', amountCrypto: 12.0, amountUsd: 42.0, date: '15 липня 2025' },
             { type: 'received', assetSymbol: 'USDT', amountCrypto: 120.0, amountUsd: 120.0, date: '11 липня 2025' }
         ];
-        
+
         function showAlert(action) {
             tg.showAlert(`Функція "${action}" знаходиться в розробці.`);
+        }
+
+        // НОВА ФУНКЦІЯ: відкриває посилання на Binance
+        function openBinanceExchange() {
+            window.open('https://www.binance.com/activity/referral-entry/CPA?ref=CPA_00VSSX5MBC', '_blank');
         }
 
         function showMainView() {
@@ -117,13 +122,13 @@
         function showDetailView(assetSymbol) {
             const asset = myAssets.find(a => a.symbol === assetSymbol);
             if (!asset) return;
-            
+
             mainView.style.display = 'none';
             detailView.style.display = 'block';
 
             document.getElementById('detail-asset-icon').src = asset.iconUrl;
             document.getElementById('detail-asset-name').textContent = asset.name;
-            
+
             displayTransactionHistory(assetSymbol);
         }
 
@@ -135,7 +140,7 @@
             for (const asset of myAssets) {
                 const priceData = prices[asset.id];
                 if (!priceData) continue;
-                
+
                 const usdValue = asset.balance * priceData.usd;
                 const priceChange = priceData.usd_24h_change || 0;
                 totalUsdValue += usdValue;
@@ -144,16 +149,16 @@
                 const changeSign = priceChange >= 0 ? '+' : '';
 
                 html += `<div class="asset-item" onclick="showDetailView('${asset.symbol}')">
-                           <img src="${asset.iconUrl}" class="asset-icon">
-                           <div class="asset-info">
-                             <div class="asset-name">${asset.name}</div>
-                             <div class="asset-balance-crypto">${asset.balance.toFixed(4)} ${asset.symbol}</div>
-                           </div>
-                           <div class="asset-value">
-                             <div class="asset-balance-usd">$${usdValue.toFixed(2)}</div>
-                             <div class="asset-price-change ${changeClass}">${changeSign}${priceChange.toFixed(2)}%</div>
-                           </div>
-                         </div>`;
+                               <img src="${asset.iconUrl}" class="asset-icon">
+                               <div class="asset-info">
+                                 <div class="asset-name">${asset.name}</div>
+                                 <div class="asset-balance-crypto">${asset.balance.toFixed(4)} ${asset.symbol}</div>
+                               </div>
+                               <div class="asset-value">
+                                 <div class="asset-balance-usd">$${usdValue.toFixed(2)}</div>
+                                 <div class="asset-price-change ${changeClass}">${changeSign}${priceChange.toFixed(2)}%</div>
+                               </div>
+                             </div>`;
             }
             assetListElement.innerHTML = html;
             document.getElementById('total-balance-usd').textContent = `$${totalUsdValue.toFixed(2)}`;
@@ -162,30 +167,30 @@
         function displayTransactionHistory(filterSymbol = null) {
             const targetElementId = filterSymbol ? 'filtered-history-list' : 'transaction-history-list';
             const historyListElement = document.getElementById(targetElementId);
-            
-            const transactionsToDisplay = filterSymbol 
-                ? mockTransactions.filter(tx => tx.assetSymbol === filterSymbol) 
+
+            const transactionsToDisplay = filterSymbol
+                ? mockTransactions.filter(tx => tx.assetSymbol === filterSymbol)
                 : mockTransactions;
-            
+
             let html = '';
             for (const tx of transactionsToDisplay) {
-                 const isReceived = tx.type === 'received';
-                 const sign = isReceived ? '+' : '-';
-                 const amountClass = isReceived ? 'received' : 'sent';
-                 const icon = isReceived ? '➕' : '⬆️';
-                 const asset = myAssets.find(a => a.symbol === tx.assetSymbol);
+                   const isReceived = tx.type === 'received';
+                   const sign = isReceived ? '+' : '-';
+                   const amountClass = isReceived ? 'received' : 'sent';
+                   const icon = isReceived ? '➕' : '⬆️';
+                   const asset = myAssets.find(a => a.symbol === tx.assetSymbol);
 
-                 html += `<div class="history-item">
-                            <div class="history-icon">${icon}</div>
-                            <div class="history-details">
-                              <div class="history-type">${isReceived ? 'Отримано' : 'Надіслано'} ${asset.name}</div>
-                              <div class="history-date">${tx.date}</div>
-                            </div>
-                            <div class="history-amount">
-                              <div class="history-amount-crypto ${amountClass}">${sign}${tx.amountCrypto.toFixed(4)} ${tx.assetSymbol}</div>
-                              <div class="history-amount-usd">$${tx.amountUsd.toFixed(2)}</div>
-                            </div>
-                          </div>`;
+                   html += `<div class="history-item">
+                                 <div class="history-icon">${icon}</div>
+                                 <div class="history-details">
+                                   <div class="history-type">${isReceived ? 'Отримано' : 'Надіслано'} ${asset.name}</div>
+                                   <div class="history-date">${tx.date}</div>
+                                 </div>
+                                 <div class="history-amount">
+                                   <div class="history-amount-crypto ${amountClass}">${sign}${tx.amountCrypto.toFixed(4)} ${tx.assetSymbol}</div>
+                                   <div class="history-amount-usd">$${tx.amountUsd.toFixed(2)}</div>
+                                 </div>
+                               </div>`;
             }
             historyListElement.innerHTML = html;
         }
@@ -196,7 +201,7 @@
                 const response = await fetch(pricesUrl);
                 if (!response.ok) throw new Error('Failed to load prices');
                 const prices = await response.json();
-                
+
                 await displayAssets(prices);
                 displayTransactionHistory();
             } catch (error) {
